@@ -19,7 +19,9 @@ export type DataSource =
   | "recent_leads"
   | "leads_by_tag"
   | "leads_by_utm"
-  | "leads_by_custom_field";
+  | "leads_by_custom_field"
+  | "custom_field_avg"
+  | "custom_field_fill_rate";
 
 export interface OverviewCard {
   id: string;
@@ -105,6 +107,36 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     defaultSize: { widthPercent: 40, height: 320 },
     icon: "Settings2",
     category: "charts",
+  },
+  {
+    id: "custom_field_pie",
+    title: "Pizza - Campo Personalizado",
+    description: "Distribuição de leads por campo personalizado em pizza",
+    chartType: "pie",
+    dataSource: "leads_by_custom_field",
+    defaultSize: { widthPercent: 40, height: 320 },
+    icon: "PieChart",
+    category: "charts",
+  },
+  {
+    id: "custom_field_avg",
+    title: "Gauge - Média de Campo Numérico",
+    description: "Média de um campo numérico para medir lead score",
+    chartType: "gauge",
+    dataSource: "custom_field_avg",
+    defaultSize: { widthPercent: 25, height: 220 },
+    icon: "Gauge",
+    category: "metrics",
+  },
+  {
+    id: "custom_field_fill_rate",
+    title: "Numérico - Taxa de Preenchimento",
+    description: "Percentual de leads que preencheram um campo",
+    chartType: "number",
+    dataSource: "custom_field_fill_rate",
+    defaultSize: { widthPercent: 22, height: 180 },
+    icon: "CheckCircle",
+    category: "metrics",
   },
   {
     id: "leads_heatmap",

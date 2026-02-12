@@ -208,6 +208,44 @@ export function ChartRenderer({
           .sort((a, b) => b.value - a.value)
           .slice(0, 10);
       }
+      case "custom_field_avg": {
+        if (!customFieldId) return null;
+        const field = customFields.find(f => f.id === customFieldId);
+        if (!field) return null;
+
+        const values: number[] = [];
+        leads.forEach((lead) => {
+          const response = customFieldResponses.find(
+            r => r.lead_id === lead.id && r.field_id === customFieldId
+          );
+          if (response?.response_value) {
+            const num = parseFloat(response.response_value);
+            if (!isNaN(num)) values.push(num);
+          }
+        });
+
+        if (values.length === 0) return null;
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        return { avg: Math.round(avg * 10) / 10, max, min, count: values.length, fieldLabel: field.field_label };
+      }
+      case "custom_field_fill_rate": {
+        if (!customFieldId) return null;
+        const field2 = customFields.find(f => f.id === customFieldId);
+        if (!field2) return null;
+
+        const totalLeads = leads.length;
+        const filledCount = leads.filter((lead) => {
+          const response = customFieldResponses.find(
+            r => r.lead_id === lead.id && r.field_id === customFieldId
+          );
+          return response?.response_value && response.response_value.trim() !== "";
+        }).length;
+
+        const rate = totalLeads > 0 ? Math.round((filledCount / totalLeads) * 100) : 0;
+        return { total: rate, filled: filledCount, totalLeads, fieldLabel: field2.field_label, isPercentage: true };
+      }
       default:
         return null;
     }
@@ -569,15 +607,87 @@ export function ChartRenderer({
     }
 
     case "number": {
-      const numberData = chartData as { total: number } | null;
+      const numberData = chartData as { total: number; filled?: number; totalLeads?: number; fieldLabel?: string; isPercentage?: boolean } | null;
       if (!numberData || typeof numberData.total !== 'number') {
         return renderEmptyState();
       }
       return (
         <div className="flex flex-col items-center justify-center h-full gap-2">
           <span className="text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            {numberData.total.toLocaleString()}
+            {numberData.isPercentage ? `${numberData.total}%` : numberData.total.toLocaleString()}
           </span>
+          {numberData.isPercentage && numberData.filled !== undefined && (
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-700"
+                  style={{ width: `${numberData.total}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {numberData.filled} de {numberData.totalLeads} leads
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case "gauge": {
+      const gaugeData = chartData as { avg: number; max: number; min: number; count: number; fieldLabel: string } | null;
+      if (!gaugeData) {
+        return renderEmptyState();
+      }
+
+      const { avg, max, min, count, fieldLabel } = gaugeData;
+      // Gauge angle: map avg from min-max to 0-180 degrees
+      const range = max - min || 1;
+      const percentage = Math.min(((avg - min) / range) * 100, 100);
+      const angle = (percentage / 100) * 180;
+      const uniqueId = `gauge-${cardId}`;
+
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-3 px-4">
+          <div className="relative w-full max-w-[200px]" style={{ aspectRatio: '2/1' }}>
+            <svg
+              className="w-full h-full"
+              viewBox="0 0 200 110"
+              preserveAspectRatio="xMidYMax meet"
+            >
+              {/* Background track */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 180 100"
+                fill="none"
+                stroke="hsl(var(--border))"
+                strokeWidth="14"
+                strokeLinecap="round"
+              />
+              {/* Progress arc */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 180 100"
+                fill="none"
+                stroke={`url(#${uniqueId})`}
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeDasharray={`${(angle / 180) * 251.33} 251.33`}
+              />
+              <defs>
+                <linearGradient id={uniqueId} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#ea580c" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
+              <span className="text-3xl font-bold text-foreground">{avg}</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">média</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>Min: <strong className="text-foreground">{min}</strong></span>
+            <span>Max: <strong className="text-foreground">{max}</strong></span>
+            <span>{count} leads</span>
+          </div>
         </div>
       );
     }

@@ -39,6 +39,8 @@ const DATA_SOURCES: Array<{ id: DataSource; title: string }> = [
   { id: "leads_by_tag", title: "Leads por Tag" },
   { id: "leads_by_utm", title: "Leads por UTM" },
   { id: "leads_by_custom_field", title: "Leads por Campo Personalizado" },
+  { id: "custom_field_avg", title: "Média de Campo Numérico" },
+  { id: "custom_field_fill_rate", title: "Taxa de Preenchimento" },
 ];
 
 export function CardConfigPanel({ 
@@ -181,8 +183,8 @@ export function CardConfigPanel({
                 </Select>
               </div>
 
-              {/* Campo Personalizado Selector - only show when custom field data source is selected */}
-              {card.dataSource === "leads_by_custom_field" && (
+              {/* Campo Personalizado Selector - show when custom field data source is selected */}
+              {(card.dataSource === "leads_by_custom_field" || card.dataSource === "custom_field_avg" || card.dataSource === "custom_field_fill_rate") && (
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Campo Personalizado</label>
                   {isLoadingFields ? (
@@ -200,7 +202,13 @@ export function CardConfigPanel({
                         <SelectValue placeholder="Selecionar campo" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border">
-                        {customFields.map((field) => (
+                        {customFields
+                          .filter(field => {
+                            // For avg, only show numeric fields
+                            if (card.dataSource === "custom_field_avg") return field.field_type === "number";
+                            return true;
+                          })
+                          .map((field) => (
                           <SelectItem key={field.id} value={field.id}>
                             {field.field_label}
                           </SelectItem>
