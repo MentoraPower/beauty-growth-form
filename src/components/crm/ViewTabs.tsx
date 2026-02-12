@@ -300,7 +300,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         onDragEnd={handleDragEnd}
       >
         <div className="flex items-center justify-between w-full px-4 pb-2">
-          <div ref={containerRef} className="relative inline-flex items-center gap-5">
+          <div ref={containerRef} className="relative inline-flex items-center gap-0">
             {/* Animated gradient indicator */}
             <div 
               className="absolute bottom-0 h-[1.5px] rounded-sm bg-gradient-to-r from-orange-400 to-orange-600"
@@ -315,16 +315,20 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
               items={visibleTabs.map(t => t.id)}
               strategy={horizontalListSortingStrategy}
             >
-              {visibleTabs.map((tab) => (
-                <SortableTab
-                  key={tab.id}
-                  tab={tab}
-                  isActive={activeView === tab.id}
-                  onViewChange={onViewChange}
-                  onTabHover={onTabHover}
-                  onHide={handleHideTab}
-                  setTabRef={setTabRef(tab.id)}
-                />
+              {visibleTabs.map((tab, index) => (
+                <div key={tab.id} className="flex items-center">
+                  {index > 0 && (
+                    <span className="text-border mx-3 select-none text-[13px] font-light">|</span>
+                  )}
+                  <SortableTab
+                    tab={tab}
+                    isActive={activeView === tab.id}
+                    onViewChange={onViewChange}
+                    onTabHover={onTabHover}
+                    onHide={handleHideTab}
+                    setTabRef={setTabRef(tab.id)}
+                  />
+                </div>
               ))}
             </SortableContext>
             
