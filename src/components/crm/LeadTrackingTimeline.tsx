@@ -71,31 +71,8 @@ const getIconForType = (tipo: string) => {
   }
 };
 
-const getIconColors = (tipo: string): { bg: string; text: string } => {
-  switch (tipo) {
-    case "chamada_recusada":
-      return { bg: "bg-red-500", text: "text-white" };
-    case "mudou_usuario":
-      return { bg: "bg-pink-500", text: "text-white" };
-    case "webhook":
-      return { bg: "bg-indigo-500", text: "text-white" };
-    case "mudou_pipeline":
-      return { bg: "bg-violet-500", text: "text-white" };
-    case "mudou_posicao":
-      return { bg: "bg-slate-500", text: "text-white" };
-    case "mudou_origem":
-      return { bg: "bg-cyan-500", text: "text-white" };
-    case "cadastro":
-      return { bg: "bg-emerald-500", text: "text-white" };
-    case "formulario":
-      return { bg: "bg-blue-500", text: "text-white" };
-    case "grupo_entrada":
-      return { bg: "bg-green-500", text: "text-white" };
-    case "grupo_saida":
-      return { bg: "bg-orange-500", text: "text-white" };
-    default:
-      return { bg: "bg-violet-500", text: "text-white" };
-  }
+const getIconColors = (): { bg: string; text: string } => {
+  return { bg: "bg-muted dark:bg-[#1f1f1f]", text: "text-muted-foreground" };
 };
 
 export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp }: LeadTrackingTimelineProps) {
@@ -278,7 +255,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
               {/* Left side - Icon and vertical line */}
               <div className="flex flex-col items-center mr-4">
                 {/* Icon */}
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-orange-500 text-white shadow-md z-10">
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-muted dark:bg-[#1f1f1f] text-muted-foreground shadow-sm z-10">
                   <Users className="h-5 w-5" />
                 </div>
                 
@@ -325,7 +302,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
               {/* Left side - Icon and vertical line */}
               <div className="flex flex-col items-center mr-4">
                 {/* Icon */}
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-500 text-white shadow-md z-10">
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-muted dark:bg-[#1f1f1f] text-muted-foreground shadow-sm z-10">
                   <Globe className="h-5 w-5" />
                 </div>
                 
@@ -364,7 +341,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
 
           {/* Timeline Events */}
           {events.map((event, index) => {
-            const iconColors = getIconColors(event.tipo);
+            const iconColors = getIconColors();
             const isLast = index === events.length - 1;
             
             return (
@@ -372,7 +349,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                 {/* Left side - Icon and vertical line */}
                 <div className="flex flex-col items-center mr-4">
                   {/* Icon */}
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconColors.bg} ${iconColors.text} shadow-md z-10`}>
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconColors.bg} ${iconColors.text} shadow-sm z-10`}>
                     {getIconForType(event.tipo)}
                   </div>
                   
