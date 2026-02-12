@@ -141,75 +141,79 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
                     </div>
                   ) : (
                     activities.map((activity, index) => (
-                      <div
-                        key={activity.id}
-                        onClick={() => handleActivityClick(activity)}
-                        className={cn(
-                          "flex items-center gap-3 py-2 px-2 rounded-lg cursor-pointer transition-colors",
-                          selectedActivity?.id === activity.id 
-                            ? "bg-primary/5" 
-                            : "hover:bg-muted/50",
-                          activity.concluida && "opacity-60"
-                        )}
-                      >
-                        {/* Ícone do tipo ou número em círculo */}
-                        <div className="flex items-center justify-center w-7 h-7 flex-shrink-0 text-foreground">
-                            {getTipoIcon(activity.tipo) || (
-                              <span className={cn(
-                                "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium",
-                                activity.concluida 
-                                  ? "bg-neutral-800 dark:bg-white/20 text-white" 
-                                  : "bg-neutral-900 dark:bg-white/30 text-white"
-                              )}>
-                                {index + 1}
-                            </span>
+                      <div key={activity.id}>
+                        <div
+                          onClick={() => handleActivityClick(activity)}
+                          className={cn(
+                            "flex items-center gap-3 py-2 px-2 rounded-lg cursor-pointer transition-colors",
+                            selectedActivity?.id === activity.id 
+                              ? "bg-primary/5" 
+                              : "hover:bg-muted/50",
+                            activity.concluida && "opacity-60"
                           )}
+                        >
+                          {/* Ícone do tipo ou número em círculo */}
+                          <div className="flex items-center justify-center w-7 h-7 flex-shrink-0 text-foreground">
+                              {getTipoIcon(activity.tipo) || (
+                                <span className={cn(
+                                  "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium",
+                                  activity.concluida 
+                                    ? "bg-neutral-800 dark:bg-white/20 text-white" 
+                                    : "bg-neutral-900 dark:bg-white/30 text-white"
+                                )}>
+                                  {index + 1}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Atividade - título */}
+                          <p className="text-sm font-semibold truncate flex-1 min-w-0">
+                            {activity.titulo}
+                          </p>
+
+                          {/* Data - formato dd/MM */}
+                          <span className="w-14 text-xs font-semibold text-muted-foreground text-center flex-shrink-0">
+                            {format(new Date(activity.data + 'T00:00:00'), "dd/MM")}
+                          </span>
+
+                          {/* Concluído - checkbox */}
+                          <div className="w-16 flex justify-center flex-shrink-0">
+                            <Checkbox
+                              checked={activity.concluida}
+                              onCheckedChange={(checked) => {
+                                if (typeof checked === 'boolean') {
+                                  handleToggleConcluida(activity.id, checked);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+
+                          {/* Menu 3 pontos */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => handleEditActivity(activity)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteActivity(activity.id)} 
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-
-                        {/* Atividade - título */}
-                        <p className="text-sm font-semibold truncate flex-1 min-w-0">
-                          {activity.titulo}
-                        </p>
-
-                        {/* Data - formato dd/MM */}
-                        <span className="w-14 text-xs font-semibold text-muted-foreground text-center flex-shrink-0">
-                          {format(new Date(activity.data + 'T00:00:00'), "dd/MM")}
-                        </span>
-
-                        {/* Concluído - checkbox */}
-                        <div className="w-16 flex justify-center flex-shrink-0">
-                          <Checkbox
-                            checked={activity.concluida}
-                            onCheckedChange={(checked) => {
-                              if (typeof checked === 'boolean') {
-                                handleToggleConcluida(activity.id, checked);
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-
-                        {/* Menu 3 pontos */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => handleEditActivity(activity)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteActivity(activity.id)} 
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {index < activities.length - 1 && (
+                          <div className="mx-6 border-b border-border/30 dark:border-white/[0.06]" />
+                        )}
                       </div>
                     ))
                   )}
