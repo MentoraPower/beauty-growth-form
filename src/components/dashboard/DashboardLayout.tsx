@@ -249,10 +249,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: 12 + sidebarCollapsedWidth - 8,
+            left: 12 + sidebarCollapsedWidth - 16,
             top: '45px',
             height: 'calc(100vh - 45px)',
-            width: submenuWidth + 8 + 20,
+            width: submenuWidth + 16 + 4,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
           }}
@@ -261,10 +261,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           {/* CRM Submenu Panel - animated inside clip container */}
           <div
             style={{
-              width: submenuWidth + 20,
-              transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth + 20}px)`,
+              width: submenuWidth + 16,
+              transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth + 16}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
-              paddingLeft: 20,
+              paddingLeft: 16,
             }}
             className={cn(
               "h-full overflow-hidden",
@@ -381,7 +381,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <main 
             style={{ 
               left: crmSubmenuOpen 
-                ? 12 + sidebarCollapsedWidth - 8 + submenuWidth + 20 + 8
+                ? 12 + sidebarCollapsedWidth - 16 + submenuWidth + 16 + 4
                 : 12 + sidebarCollapsedWidth + 12 + 8,
               top: '49px',
               right: 0,
