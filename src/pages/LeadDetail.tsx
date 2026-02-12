@@ -89,6 +89,7 @@ const tabs = [
   { id: "atividades", label: "Atividades" },
   { id: "contato", label: "Contato" },
   { id: "rastreamento", label: "Rastreamento" },
+  { id: "leadform", label: "Lead Form" },
 ];
 
 export default function LeadDetail() {
@@ -123,7 +124,7 @@ export default function LeadDetail() {
   };
   
   // Use URL param for tab persistence, default to "atividades"
-  const activeTab = tabParam && ["atividades", "contato", "rastreamento"].includes(tabParam) 
+  const activeTab = tabParam && ["atividades", "contato", "rastreamento", "leadform"].includes(tabParam) 
     ? tabParam 
     : "atividades";
 
@@ -594,17 +595,6 @@ export default function LeadDetail() {
                       <p className="text-sm font-medium">{formatDate(lead.created_at)}</p>
                     </div>
                   </div>
-
-                  {/* Separator */}
-                  <div className="border-t border-[#00000010] my-4" />
-
-                  {/* Onboarding Section - inline */}
-                  <OnboardingSection 
-                    leadId={lead.id} 
-                    leadName={lead.name} 
-                    inline 
-                    onOpenBuilder={(data) => setOnboardingBuilderData(data)}
-                  />
                 </CardContent>
               </Card>
 
@@ -645,6 +635,28 @@ export default function LeadDetail() {
                   leadEmail={lead.email}
                   leadWhatsapp={lead.whatsapp}
                 />
+              </motion.div>
+            )}
+
+            {activeTab === "leadform" && (
+              <motion.div
+                key="leadform"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="h-[calc(100vh-280px)] overflow-y-auto"
+              >
+                <Card className="border-[#00000010] shadow-none">
+                  <CardContent className="p-6">
+                    <OnboardingSection 
+                      leadId={lead.id} 
+                      leadName={lead.name} 
+                      inline 
+                      onOpenBuilder={(data) => setOnboardingBuilderData(data)}
+                    />
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
           </AnimatePresence>
