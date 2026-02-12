@@ -271,7 +271,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
-            <div className="h-full bg-card rounded-b-2xl border border-border border-t-0">
+            <div className="h-full bg-card rounded-br-2xl border border-border border-t-0 border-l-0">
               <div
                 className={cn(
                   "h-full",
