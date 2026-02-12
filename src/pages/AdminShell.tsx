@@ -46,7 +46,7 @@ function TopNavbar() {
   return (
     <>
       <div 
-        className="fixed top-0 left-0 right-0 z-50 h-[45px] bg-card flex items-center justify-between px-3 border-b border-border"
+        className="fixed top-0 left-0 right-0 z-50 h-[45px] bg-card flex items-center justify-between px-0 border-b border-border"
       >
         <WorkspaceDropdown />
         
@@ -54,7 +54,7 @@ function TopNavbar() {
         <div id="navbar-center-slot" className="flex-1 flex items-center justify-center max-w-md mx-4" />
         
         {/* Right side actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pr-3">
           <ThemeToggle />
           
           {/* Profile Avatar */}
