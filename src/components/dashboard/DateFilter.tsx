@@ -106,7 +106,7 @@ export default function DateFilter({ onDateChange }: DateFilterProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {/* Preset buttons */}
-      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 border border-border/30 dark:border-white/[0.06]">
         {presets.map((preset) => (
           <button
             key={preset.value}
@@ -114,7 +114,7 @@ export default function DateFilter({ onDateChange }: DateFilterProps) {
             className={cn(
               "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
               selectedPreset === preset.value
-                ? "bg-white text-foreground shadow-sm"
+                ? "bg-white dark:bg-white/10 text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -129,7 +129,7 @@ export default function DateFilter({ onDateChange }: DateFilterProps) {
           <Button
             variant="outline"
             className={cn(
-              "h-9 px-3 gap-2 border-black/10 bg-white hover:bg-muted/50",
+              "h-9 px-3 gap-2 border-border/30 dark:border-white/[0.06] bg-white dark:bg-white/[0.05] hover:bg-muted/50",
               selectedPreset === "custom" && "border-primary/50 bg-primary/5"
             )}
           >
