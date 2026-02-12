@@ -25,13 +25,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 // Modern color palette with black, dark gray and orange gradient
 const MODERN_COLORS = [
   { solid: "#f97316", gradient: ["#fb923c", "#ea580c"] }, // Orange (primary)
-  { solid: "#1a1a1a", gradient: ["#2d2d2d", "#0a0a0a"] }, // Black
-  { solid: "#404040", gradient: ["#525252", "#262626"] }, // Dark Gray
-  { solid: "#f97316", gradient: ["#fdba74", "#c2410c"] }, // Orange variant
-  { solid: "#171717", gradient: ["#262626", "#0a0a0a"] }, // Darker Black
-  { solid: "#525252", gradient: ["#737373", "#3f3f46"] }, // Medium Gray
+  { solid: "#a3a3a3", gradient: ["#d4d4d4", "#737373"] }, // Neutral Gray
+  { solid: "#78716c", gradient: ["#a8a29e", "#57534e"] }, // Warm Gray
+  { solid: "#fb923c", gradient: ["#fdba74", "#f97316"] }, // Light Orange
+  { solid: "#9ca3af", gradient: ["#d1d5db", "#6b7280"] }, // Cool Gray
+  { solid: "#737373", gradient: ["#a3a3a3", "#525252"] }, // Medium Gray
   { solid: "#ea580c", gradient: ["#f97316", "#c2410c"] }, // Deep Orange
-  { solid: "#292929", gradient: ["#3d3d3d", "#171717"] }, // Charcoal
+  { solid: "#b8b8b8", gradient: ["#d4d4d4", "#8a8a8a"] }, // Silver
 ];
 
 interface CustomField {
