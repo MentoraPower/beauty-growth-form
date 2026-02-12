@@ -104,6 +104,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching workspaces:', error);
     } finally {
       setIsLoading(false);
+      // Clear the native loading overlay after workspaces are loaded
+      sessionStorage.removeItem('workspace_switching');
+      const nativeOverlay = document.getElementById('workspace-loading-overlay');
+      if (nativeOverlay) nativeOverlay.style.display = 'none';
     }
   }, []);
 
@@ -123,13 +127,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setIsSwitching(true);
       setCurrentWorkspace(workspace);
       localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceId);
-      // Clear last sub-origin from previous workspace
       localStorage.removeItem('crm_last_sub_origin');
-      // Small delay to show the loading overlay before reload
+      // Set flag so the native overlay shows immediately on reload
+      sessionStorage.setItem('workspace_switching', 'true');
+      // Show native overlay now
+      const nativeOverlay = document.getElementById('workspace-loading-overlay');
+      if (nativeOverlay) nativeOverlay.style.display = 'flex';
+      // Small delay then reload
       setTimeout(() => {
-        // Navigate to clean /crm without any origin params from previous workspace
         window.location.href = '/crm';
-      }, 300);
+      }, 150);
     }
   }, [workspaces, currentWorkspace]);
 
@@ -207,9 +214,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       
       // Show loading and reload
       setIsSwitching(true);
+      sessionStorage.setItem('workspace_switching', 'true');
+      const nativeOverlay = document.getElementById('workspace-loading-overlay');
+      if (nativeOverlay) nativeOverlay.style.display = 'flex';
       setTimeout(() => {
         window.location.href = '/crm';
-      }, 300);
+      }, 150);
       
       return newWorkspace;
     } catch (error) {
