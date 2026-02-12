@@ -23,7 +23,7 @@ import { OnboardingSection, OnboardingBuilderData } from "@/components/onboardin
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
 import { WhatsAppChatDropdown } from "@/components/crm/WhatsAppChatDropdown";
-import { AssignMemberDropdown } from "@/components/crm/AssignMemberDropdown";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -426,14 +426,9 @@ export default function LeadDetail() {
               </div>
             </div>
             
-            {/* Assign member dropdown + Three dots menu */}
+            {/* Three dots menu */}
             <div className="flex items-center gap-2">
-              <AssignMemberDropdown 
-                leadId={lead.id} 
-                assignedTo={lead.assigned_to}
-                onAssign={(userId) => setLead({ ...lead, assigned_to: userId })}
-              />
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="h-10 w-10">

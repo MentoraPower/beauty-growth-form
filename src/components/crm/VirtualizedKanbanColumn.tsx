@@ -22,7 +22,7 @@ interface VirtualizedKanbanColumnProps {
   dropIndicator?: DropIndicator | null;
   activePipelineId?: string | null;
   tagsMap?: Map<string, LeadTag[]>;
-  teamMembersMap?: Map<string, { name: string | null; photo_url: string | null }>;
+  
 }
 
 const CARD_HEIGHT = 116; // Approximate height of a KanbanCard
@@ -38,7 +38,7 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
   dropIndicator,
   activePipelineId,
   tagsMap,
-  teamMembersMap,
+  
 }: VirtualizedKanbanColumnProps) {
   const displayCount = leadCount !== undefined ? leadCount : leads.length;
   
@@ -148,7 +148,7 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
                         lead={lead} 
                         subOriginId={subOriginId}
                         tags={tagsMap?.get(lead.id) || []}
-                        assignedMemberInfo={lead.assigned_to ? teamMembersMap?.get(lead.assigned_to) : undefined}
+                        
                       />
                     </div>
                   );
