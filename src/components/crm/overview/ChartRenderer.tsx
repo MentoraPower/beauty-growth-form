@@ -64,14 +64,24 @@ interface ChartRendererProps {
 }
 
 // Custom tooltip component
+// Translate recharts data keys to Portuguese
+const translateName = (name: string): string => {
+  const translations: Record<string, string> = {
+    count: "Quantidade",
+    value: "Valor",
+    total: "Total",
+  };
+  return translations[name?.toLowerCase()] || name;
+};
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background/95 backdrop-blur-sm border border-border/20 rounded-xl px-4 py-3 shadow-xl">
+      <div className="bg-popover backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3 shadow-2xl">
         {label && <p className="text-xs text-muted-foreground mb-1">{label}</p>}
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm font-semibold text-foreground">
-            {entry.name}: <span style={{ color: entry.color || entry.fill }}>{entry.value}</span>
+            {translateName(entry.name)}: <span style={{ color: entry.color || entry.fill }}>{entry.value}</span>
           </p>
         ))}
       </div>
