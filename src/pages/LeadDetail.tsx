@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mail, Calendar, MoreVertical, Trash2, User, ArrowRightLeft, Instagram } from "lucide-react";
-import WhatsApp from "@/components/icons/WhatsApp";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
@@ -23,7 +23,7 @@ import { CustomFieldsPanel } from "@/components/crm/CustomFieldsPanel";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
-import { WhatsAppChatDropdown } from "@/components/crm/WhatsAppChatDropdown";
+
 
 import {
   DropdownMenu,
@@ -414,12 +414,7 @@ export default function LeadDetail() {
                   <h1 className="text-xl font-bold leading-tight">
                     {lead.name === "Incompleto" ? "incompleto" : lead.name}
                   </h1>
-                                <WhatsAppChatDropdown 
-                                    phone={lead.whatsapp || ""}
-                                    countryCode={lead.country_code || "+55"}
-                                    contactName={lead.name}
-                                  />
-                                  <CalendarDropdown
+                                   <CalendarDropdown
                                     leadName={lead.name}
                                     leadEmail={lead.email}
                                     subOriginId={lead.sub_origin_id}
@@ -573,30 +568,6 @@ export default function LeadDetail() {
                       />
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
-                      <WhatsApp className="h-5 w-5 text-neutral-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">WhatsApp</p>
-                      <EditableField
-                        value={lead.whatsapp?.replace(lead.country_code || "+55", "") || ""}
-                        onSave={(value) => updateLeadField("whatsapp", value.replace(/^\+\d{1,3}/, ""))}
-                        placeholder="Digite o WhatsApp"
-                        displayValue={
-                          !lead.whatsapp || lead.whatsapp === "" ? (
-                            <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                          ) : (
-                            <span className="text-sm font-medium">
-                              {lead.country_code} {lead.whatsapp.replace(lead.country_code || "+55", "")}
-                            </span>
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
                       <Instagram className="h-5 w-5 text-neutral-600" />
