@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, ChevronsRight } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
@@ -306,9 +306,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               left: 12 + sidebarCollapsedWidth + 12 - 16,
               zIndex: 40,
             }}
-            className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-8 h-16 items-center justify-center bg-zinc-900 rounded-r-xl hover:bg-zinc-800 transition-colors shadow-lg"
+            className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-5 h-10 items-center justify-center bg-zinc-900 rounded-r-md hover:bg-zinc-800 transition-colors shadow-md"
           >
-            <ChevronsRight className="w-4 h-4 text-white" />
+            <ChevronRight className="w-3 h-3 text-white" />
           </button>
         )}
 
