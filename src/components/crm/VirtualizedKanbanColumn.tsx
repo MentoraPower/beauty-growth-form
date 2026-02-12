@@ -26,7 +26,7 @@ interface VirtualizedKanbanColumnProps {
 }
 
 const CARD_HEIGHT = 116; // Approximate height of a KanbanCard
-const CARD_GAP = 4;
+const CARD_GAP = 2;
 
 export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({ 
   pipeline, 
