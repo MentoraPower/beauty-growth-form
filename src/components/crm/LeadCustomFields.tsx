@@ -121,21 +121,21 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
 
   const formatDisplayValue = (field: CustomField, value: string | null | undefined) => {
     if (!value || value.trim() === "") {
-      return <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>;
+      return <span className="text-sm font-semibold text-muted-foreground italic">incompleto</span>;
     }
 
     if (field.field_type === "boolean") {
-      return <span className="text-sm font-medium">{value === "true" ? "Sim" : "Não"}</span>;
+      return <span className="text-sm font-semibold">{value === "true" ? "Sim" : "Não"}</span>;
     }
 
     if (field.field_type === "number") {
       const num = parseFloat(value);
       if (!isNaN(num)) {
-        return <span className="text-sm font-medium">{num.toLocaleString("pt-BR")}</span>;
+        return <span className="text-sm font-semibold">{num.toLocaleString("pt-BR")}</span>;
       }
     }
 
-    return <span className="text-sm font-medium">{value}</span>;
+    return <span className="text-sm font-semibold">{value}</span>;
   };
 
   const getFieldIcon = (field: CustomField) => {
@@ -159,7 +159,7 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">Campos Personalizados</h3>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map(i => (
             <Skeleton key={i} className="h-20 w-full rounded-lg" />
           ))}
@@ -195,7 +195,7 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
           Nenhum campo personalizado. {onOpenManager && "Clique em \"Gerenciar Campos\" para adicionar."}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((field, index) => {
             const value = responses[field.id] || "";
             const isFileField = field.field_type === "file";
@@ -209,7 +209,7 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
               >
                 <div className="flex items-center gap-2 mb-1">
                   {getFieldIcon(field)}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-semibold text-muted-foreground">
                     {field.field_label}
                     {field.is_required && <span className="text-destructive ml-1">*</span>}
                   </p>
