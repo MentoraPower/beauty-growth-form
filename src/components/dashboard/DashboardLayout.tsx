@@ -268,20 +268,20 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             }}
             className={cn(
               "h-full overflow-hidden",
-              animationsEnabled && "transition-transform duration-300 ease-out"
+              animationsEnabled && "transition-transform duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
             )}
           >
             <div className="h-full bg-card border border-border border-t-0 border-l-0">
               <div
                 className={cn(
                   "h-full",
-                  animationsEnabled && "transition-opacity duration-200"
+                  animationsEnabled && "transition-opacity duration-400"
                 )}
                 style={{
                   width: submenuWidth,
                   minWidth: submenuWidth,
                   opacity: crmSubmenuOpen ? 1 : 0,
-                  transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
+                  transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '80ms' : '0ms',
                 }}
               >
                 <div className="h-full px-2 py-2">
@@ -388,7 +388,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               height: 'calc(100vh - 49px)',
               willChange: 'left',
             }}
-            className="fixed transition-[left] duration-300 ease-out"
+            className="fixed transition-[left] duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
           >
             <div className="h-full overflow-hidden relative flex flex-col bg-background pt-1 pb-3 px-3">
               <PageTransition>
