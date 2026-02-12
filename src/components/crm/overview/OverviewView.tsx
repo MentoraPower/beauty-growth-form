@@ -792,32 +792,34 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
   const activeCard = activeId ? cards.find((c) => c.id === activeId) : null;
   const sortedCards = [...cards].sort((a, b) => a.order - b.order);
 
-  // Show skeleton loading state
   if (isLoading) {
     return (
       <div className="flex flex-wrap gap-4 p-0 content-start">
-        {/* Skeleton cards mimicking overview layout */}
         {[
-          { w: "50%", h: 180 },
-          { w: "50%", h: 180 },
-          { w: "33.33%", h: 200 },
-          { w: "33.33%", h: 200 },
-          { w: "33.33%", h: 200 },
-        ].map((s, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-border/30 dark:border-white/[0.06] bg-card overflow-hidden"
-            style={{ width: `calc(${s.w} - 8px)`, height: s.h }}
-          >
-            <div className="p-4 space-y-3">
-              <div className="h-4 w-1/3 bg-muted/60 rounded animate-pulse" />
-              <div className="h-3 w-1/2 bg-muted/40 rounded animate-pulse" />
+          { w: 50, h: 200 },
+          { w: 50, h: 200 },
+          { w: 33.33, h: 220 },
+          { w: 33.33, h: 220 },
+          { w: 33.33, h: 220 },
+        ].map((s, i) => {
+          const cardsInRow = s.w === 50 ? 2 : 3;
+          const gapOffset = ((cardsInRow - 1) * 16) / cardsInRow;
+          return (
+            <div
+              key={i}
+              className="rounded-xl border border-border/30 dark:border-white/[0.06] bg-card overflow-hidden flex flex-col"
+              style={{ width: `calc(${s.w}% - ${gapOffset}px)`, height: s.h }}
+            >
+              <div className="p-4 space-y-2">
+                <div className="h-4 w-1/3 bg-muted/60 rounded animate-pulse" />
+                <div className="h-3 w-1/2 bg-muted/40 rounded animate-pulse" />
+              </div>
+              <div className="px-4 pb-4 flex-1 min-h-0">
+                <div className="h-full w-full bg-muted/30 rounded-lg animate-pulse" />
+              </div>
             </div>
-            <div className="px-4 pb-4 flex-1">
-              <div className="h-full w-full bg-muted/30 rounded-lg animate-pulse" />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
