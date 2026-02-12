@@ -293,7 +293,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
   };
 
   return (
-    <div className="w-full mb-2">
+    <div className="w-full mb-2 overflow-visible">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
