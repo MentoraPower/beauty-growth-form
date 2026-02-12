@@ -537,14 +537,12 @@ export default function LeadDetail() {
                 className="h-[calc(100vh-280px)] overflow-y-auto"
               >
               <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
               <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6 space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Informações de Contato
                   </h3>
-                  
                   
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
@@ -610,9 +608,6 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
 
-              {/* Placeholder for second column if needed */}
-              <div />
-              </div>
 
               {/* Business Info - Custom Fields - Full Width */}
               <Card className="border-[#00000010] shadow-none">
