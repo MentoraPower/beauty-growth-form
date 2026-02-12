@@ -345,7 +345,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
       </DndContext>
       
       {/* Full-width line touching submenu and right edge */}
-      <div className="h-px bg-border -mx-3" />
+      <div className="h-px bg-border" style={{ marginLeft: '-0.75rem', marginRight: '-0.75rem', width: 'calc(100% + 1.5rem)' }} />
     </div>
   );
 });
