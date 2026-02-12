@@ -306,74 +306,194 @@ export function ChartRenderer({
       }
 
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
-      const totalFontSize = Math.max(Math.min(height * 0.09, 24), 16);
 
-      // Donut size scales with available height
-      const chartSize = Math.min(height * 0.7, 160);
-      const outerRadius = chartSize / 2 - 4;
-      const innerRadius = outerRadius * 0.58;
+      // Keep the pie reasonably large; labels are laid out with collision avoidance.
+      const baseRadius = Math.min(height * 0.26, 85);
+      const outerRadius = Math.max(baseRadius, 35);
+      const innerRadius = outerRadius * 0.6;
+
+      const totalFontSize = Math.max(Math.min(height * 0.1, 28), 16);
+      const labelFontSize = Math.max(Math.min(height * 0.04, 12), 9);
+
+      const minLabelSpacing = labelFontSize + 6;
+
+      const calculateLabelPositions = (data: typeof pieData, cx: number, cy: number, oR: number) => {
+        const RADIAN = Math.PI / 180;
+        let currentAngle = 0;
+
+        const labelDistance = oR + Math.max(28, oR * 0.35);
+
+        const labels = data.map((item, index) => {
+          const sliceAngle = (item.value / total) * 360;
+          const midAngle = currentAngle + sliceAngle / 2;
+          currentAngle += sliceAngle;
+
+          const sin = Math.sin(-RADIAN * midAngle);
+          const cos = Math.cos(-RADIAN * midAngle);
+
+          const sx = cx + (oR + 4) * cos;
+          const sy = cy + (oR + 4) * sin;
+          const initialY = cy + labelDistance * sin;
+
+          return {
+            index,
+            name: item.name,
+            value: item.value,
+            midAngle,
+            cos,
+            sin,
+            sx,
+            sy,
+            side: cos >= 0 ? "right" : "left",
+            initialY,
+            finalY: initialY,
+            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
+          };
+        });
+
+        const rightLabels = labels.filter((l) => l.side === "right").sort((a, b) => a.initialY - b.initialY);
+        const leftLabels = labels.filter((l) => l.side === "left").sort((a, b) => a.initialY - b.initialY);
+
+        const resolveCollisions = (sideLabels: typeof labels) => {
+          if (sideLabels.length <= 1) return;
+
+          // Push-down pass
+          for (let i = 1; i < sideLabels.length; i++) {
+            const prev = sideLabels[i - 1];
+            const curr = sideLabels[i];
+            const minY = prev.finalY + minLabelSpacing;
+            if (curr.finalY < minY) curr.finalY = minY;
+          }
+
+          // Clamp block within bounds and re-center if needed
+          const maxY = cy + height * 0.43;
+          const minY = cy - height * 0.43;
+
+          const first = sideLabels[0];
+          const last = sideLabels[sideLabels.length - 1];
+
+          if (last.finalY > maxY) {
+            const overflow = last.finalY - maxY;
+            sideLabels.forEach((l) => (l.finalY -= overflow));
+          }
+
+          if (first.finalY < minY) {
+            const offset = minY - first.finalY;
+            sideLabels.forEach((l) => (l.finalY += offset));
+          }
+        };
+
+        resolveCollisions(rightLabels);
+        resolveCollisions(leftLabels);
+
+        return labels;
+      };
+
+      // Cache computed layout per render (Recharts calls label renderer once per slice)
+      let layoutCache: ReturnType<typeof calculateLabelPositions> | null = null;
+      let layoutCx: number | null = null;
+      let layoutCy: number | null = null;
+
+      const renderCustomLabel = (props: any) => {
+        const { cx, cy, index } = props;
+
+        if (!layoutCache || layoutCx !== cx || layoutCy !== cy) {
+          layoutCache = calculateLabelPositions(pieData, cx, cy, outerRadius);
+          layoutCx = cx;
+          layoutCy = cy;
+        }
+
+        const label = layoutCache[index];
+        if (!label) return null;
+
+        const xOffset = Math.max(42, Math.min(90, outerRadius * 1.05));
+        const labelX = label.side === "right" ? cx + outerRadius + xOffset : cx - outerRadius - xOffset;
+        const endX = labelX - (label.side === "right" ? 6 : -6);
+
+        const mx = cx + (outerRadius + 14) * label.cos;
+        const my = cy + (outerRadius + 14) * label.sin;
+
+        const textAnchor = label.side === "right" ? "start" : "end";
+        const safeName = typeof label.name === "string" && label.name.length > 18 ? `${label.name.slice(0, 16)}…` : label.name;
+
+        return (
+          <g>
+            <path
+              d={`M${label.sx},${label.sy} L${mx},${my} L${endX},${label.finalY}`}
+              stroke={label.color}
+              strokeWidth={1}
+              fill="none"
+              opacity={0.55}
+            />
+            <circle cx={label.sx} cy={label.sy} r={2} fill={label.color} opacity={0.75} />
+            <text
+              x={labelX}
+              y={label.finalY}
+              textAnchor={textAnchor}
+              dominantBaseline="middle"
+              style={{ fontSize: labelFontSize }}
+            >
+              <tspan className="fill-muted-foreground font-medium">{safeName} </tspan>
+              <tspan className="fill-foreground font-bold">{label.value}</tspan>
+            </text>
+          </g>
+        );
+      };
 
       return (
-        <div className="flex items-center justify-center w-full h-full gap-4 px-3">
-          {/* Donut chart */}
-          <div className="relative flex-shrink-0" style={{ width: chartSize, height: chartSize }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  {pieData.map((_, index) => (
-                    <linearGradient
-                      key={`gradient-${index}`}
-                      id={`pieGradient-${cardId}-${index}`}
-                      x1="0" y1="0" x2="1" y2="1"
-                    >
-                      <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
-                      <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <Pie
-                  data={pieData}
-                  cx="50%" cy="50%"
-                  innerRadius={innerRadius}
-                  outerRadius={outerRadius}
-                  paddingAngle={2}
-                  dataKey="value"
-                  strokeWidth={0}
-                  animationBegin={0}
-                  animationDuration={animDuration}
-                >
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={`url(#pieGradient-${cardId}-${index})`} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>{total}</p>
+        <div className="relative w-full h-full flex items-center justify-center">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <defs>
+                {pieData.map((entry, index) => (
+                  <linearGradient
+                    key={`gradient-${index}`}
+                    id={`pieGradient-${cardId}-${index}`}
+                    x1="0"
+                    y1="0"
+                    x2="1"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
+                    <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                paddingAngle={2}
+                dataKey="value"
+                strokeWidth={0}
+                animationBegin={0}
+                animationDuration={animDuration}
+                label={renderCustomLabel}
+                labelLine={false}
+              >
+                {pieData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={`url(#pieGradient-${cardId}-${index})`}
+                    className="drop-shadow-sm"
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>
+                {total}
+              </p>
+              <p className="text-muted-foreground uppercase tracking-wide" style={{ fontSize: labelFontSize }}>
+                Total
+              </p>
             </div>
           </div>
-
-          {/* Legend */}
-          <ScrollArea className="flex-1 min-w-0" style={{ maxHeight: chartSize }}>
-            <div className="flex flex-col gap-2">
-              {pieData.map((item, index) => {
-                const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                const safeName = item.name.length > 16 ? `${item.name.slice(0, 14)}…` : item.name;
-                return (
-                  <div key={index} className="flex items-center gap-2 min-w-0">
-                    <div
-                      className="w-3 h-3 rounded-sm flex-shrink-0"
-                      style={{ background: MODERN_COLORS[index % MODERN_COLORS.length].solid }}
-                    />
-                    <span className="text-[11px] text-muted-foreground truncate flex-1 leading-tight">{safeName}</span>
-                    <span className="text-[11px] font-bold text-foreground tabular-nums flex-shrink-0">{item.value}</span>
-                    <span className="text-[10px] text-muted-foreground/60 tabular-nums flex-shrink-0">{pct}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
         </div>
       );
     }
