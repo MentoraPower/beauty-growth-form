@@ -61,6 +61,7 @@ interface ChartRendererProps {
   customFieldId?: string;
   customFields?: CustomField[];
   customFieldResponses?: CustomFieldResponse[];
+  skipAnimation?: boolean;
 }
 
 // Custom tooltip component
@@ -104,7 +105,9 @@ export function ChartRenderer({
   customFieldId,
   customFields = [],
   customFieldResponses = [],
+  skipAnimation = false,
 }: ChartRendererProps) {
+  const animDuration = skipAnimation ? 0 : 800;
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
     if (!dataSource) return null;
@@ -428,7 +431,7 @@ export function ChartRenderer({
                 dataKey="value"
                 strokeWidth={0}
                 animationBegin={0}
-                animationDuration={800}
+                animationDuration={animDuration}
                 label={renderCustomLabel}
                 labelLine={false}
               >
@@ -510,7 +513,7 @@ export function ChartRenderer({
               fill={`url(#areaGradient-${cardId})`}
               strokeWidth={1.5}
               animationBegin={0}
-              animationDuration={800}
+              animationDuration={animDuration}
               dot={false}
               activeDot={false}
             />
@@ -551,7 +554,7 @@ export function ChartRenderer({
                 {/* Bar */}
                 <div className="w-full bg-muted/50 rounded-lg overflow-hidden" style={{ height: '40px' }}>
                   <div 
-                    className="h-full rounded-lg transition-all duration-700 ease-out"
+                    className={`h-full rounded-lg ${skipAnimation ? '' : 'transition-all duration-700 ease-out'}`}
                     style={{ 
                       width: `${Math.max(barPercentage, 2)}%`,
                       background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
@@ -696,7 +699,7 @@ export function ChartRenderer({
                 radius={[barRadius, barRadius, 0, 0]}
                 maxBarSize={maxBarWidth}
                 animationBegin={0}
-                animationDuration={800}
+                animationDuration={animDuration}
                 filter="url(#barShadow)"
                 label={({ x, y, width, value }) => (
                   <text
