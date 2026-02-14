@@ -174,7 +174,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
           </div>
 
           {/* Main content */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
             {/* Search bar */}
             <div className="px-4 pt-4 pb-3">
               <div className="relative">
