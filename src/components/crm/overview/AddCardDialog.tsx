@@ -133,7 +133,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[92vw] max-w-5xl h-[85vh] max-h-[680px] p-0 gap-0 overflow-hidden bg-background border-border/40 dark:border-white/[0.08]">
+      <DialogContent className="w-[95vw] max-w-6xl h-[90vh] max-h-[780px] p-0 gap-0 overflow-hidden bg-background border-border/40 dark:border-white/[0.08]">
         <div className="flex h-full">
           {/* Sidebar */}
           <div className="w-52 shrink-0 border-r border-border/30 dark:border-white/[0.06] flex flex-col">
