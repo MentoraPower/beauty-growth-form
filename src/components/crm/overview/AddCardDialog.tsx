@@ -155,7 +155,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
                     className={cn(
                       "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all",
                       selectedCategory === cat.id
-                        ? "bg-primary/10 text-primary font-medium"
+                        ? "bg-foreground text-background font-medium"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
@@ -163,7 +163,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
                     <span className="flex-1 text-left">{cat.label}</span>
                     <span className={cn(
                       "text-[11px] tabular-nums",
-                      selectedCategory === cat.id ? "text-primary/70" : "text-muted-foreground/50"
+                      selectedCategory === cat.id ? "text-background/60" : "text-muted-foreground/50"
                     )}>
                       {count}
                     </span>
