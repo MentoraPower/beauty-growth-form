@@ -147,7 +147,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
               placeholder="Pesquisar cartões..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 bg-muted/40 border-transparent focus:border-border/60 text-sm"
+              className="pl-9 h-9 bg-muted/40 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
             />
           </div>
 
