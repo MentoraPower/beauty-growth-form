@@ -1664,7 +1664,7 @@ export function KanbanBoard() {
           </div>
         }>
           <OverviewView
-            leads={leads}
+            leads={displayLeads}
             pipelines={pipelines}
             leadTags={leadTagsRaw}
             subOriginId={subOriginId}
