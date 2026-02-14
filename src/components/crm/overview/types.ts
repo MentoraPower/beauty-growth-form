@@ -5,13 +5,18 @@ export type CardSize = {
 
 export type ChartType = 
   | "pie" 
+  | "donut"
   | "bar" 
   | "bar_vertical"
+  | "bar_horizontal"
   | "area" 
+  | "line"
   | "gauge" 
   | "number" 
   | "list"
-  | "heatmap";
+  | "heatmap"
+  | "progress"
+  | "table";
 
 export type DataSource = 
   | "leads_over_time" 
@@ -48,10 +53,11 @@ export interface CardTemplate {
 }
 
 export const CARD_TEMPLATES: CardTemplate[] = [
+  // Metrics
   {
     id: "total_leads",
     title: "Cartão Numérico",
-    description: "Número total de leads com variação percentual",
+    description: "Número com variação percentual",
     chartType: "number",
     dataSource: "total_leads",
     defaultSize: { widthPercent: 22, height: 180 },
@@ -59,39 +65,9 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "metrics",
   },
   {
-    id: "leads_over_time",
-    title: "Gráfico de Área",
-    description: "Evolução de leads ao longo do tempo",
-    chartType: "area",
-    dataSource: "leads_over_time",
-    defaultSize: { widthPercent: 50, height: 320 },
-    icon: "TrendingUp",
-    category: "featured",
-  },
-  {
-    id: "leads_by_tag",
-    title: "Gráfico de Barras",
-    description: "Distribuição de leads por categoria",
-    chartType: "bar",
-    dataSource: "leads_by_tag",
-    defaultSize: { widthPercent: 40, height: 320 },
-    icon: "BarChart3",
-    category: "charts",
-  },
-  {
-    id: "custom_field_pie",
-    title: "Gráfico de Pizza",
-    description: "Proporção de leads por segmento",
-    chartType: "pie",
-    dataSource: "leads_by_custom_field",
-    defaultSize: { widthPercent: 40, height: 320 },
-    icon: "PieChart",
-    category: "charts",
-  },
-  {
     id: "custom_field_avg",
     title: "Gauge",
-    description: "Média de campo numérico ou lead score",
+    description: "Média ou score em semicírculo",
     chartType: "gauge",
     dataSource: "custom_field_avg",
     defaultSize: { widthPercent: 25, height: 220 },
@@ -99,19 +75,91 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "metrics",
   },
   {
-    id: "recent_leads",
-    title: "Lista de Leads",
-    description: "Últimos leads adicionados ao CRM",
-    chartType: "list",
-    dataSource: "recent_leads",
-    defaultSize: { widthPercent: 30, height: 400 },
-    icon: "List",
-    category: "lists",
+    id: "custom_field_fill_rate",
+    title: "Taxa de Preenchimento",
+    description: "Percentual de completude de dados",
+    chartType: "number",
+    dataSource: "custom_field_fill_rate",
+    defaultSize: { widthPercent: 22, height: 180 },
+    icon: "CheckCircle2",
+    category: "metrics",
   },
+  {
+    id: "progress_card",
+    title: "Barra de Progresso",
+    description: "Progresso visual em barra horizontal",
+    chartType: "progress",
+    dataSource: "total_leads",
+    defaultSize: { widthPercent: 25, height: 180 },
+    icon: "Percent",
+    category: "metrics",
+  },
+  // Charts
+  {
+    id: "leads_over_time",
+    title: "Gráfico de Área",
+    description: "Evolução ao longo do tempo com preenchimento",
+    chartType: "area",
+    dataSource: "leads_over_time",
+    defaultSize: { widthPercent: 50, height: 320 },
+    icon: "TrendingUp",
+    category: "featured",
+  },
+  {
+    id: "line_chart",
+    title: "Gráfico de Linha",
+    description: "Tendência ao longo do tempo",
+    chartType: "line",
+    dataSource: "leads_over_time",
+    defaultSize: { widthPercent: 50, height: 320 },
+    icon: "Activity",
+    category: "charts",
+  },
+  {
+    id: "leads_by_tag",
+    title: "Barras Verticais",
+    description: "Comparação por categoria em barras",
+    chartType: "bar",
+    dataSource: "leads_by_tag",
+    defaultSize: { widthPercent: 40, height: 320 },
+    icon: "BarChart3",
+    category: "charts",
+  },
+  {
+    id: "bar_horizontal_chart",
+    title: "Barras Horizontais",
+    description: "Ranking horizontal por categoria",
+    chartType: "bar_horizontal",
+    dataSource: "leads_by_tag",
+    defaultSize: { widthPercent: 40, height: 320 },
+    icon: "BarChartHorizontal",
+    category: "charts",
+  },
+  {
+    id: "custom_field_pie",
+    title: "Gráfico de Pizza",
+    description: "Proporção entre segmentos",
+    chartType: "pie",
+    dataSource: "leads_by_custom_field",
+    defaultSize: { widthPercent: 40, height: 320 },
+    icon: "PieChart",
+    category: "charts",
+  },
+  {
+    id: "donut_chart",
+    title: "Gráfico Donut",
+    description: "Pizza com centro aberto e total",
+    chartType: "donut",
+    dataSource: "leads_by_custom_field",
+    defaultSize: { widthPercent: 40, height: 320 },
+    icon: "CircleDot",
+    category: "charts",
+  },
+  // Featured
   {
     id: "leads_heatmap",
     title: "Heatmap de Atividade",
-    description: "Visualização de atividade diária em calendário",
+    description: "Atividade diária em grade de calendário",
     chartType: "heatmap",
     dataSource: "leads_over_time",
     defaultSize: { widthPercent: 60, height: 240 },
@@ -119,14 +167,25 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "featured",
   },
   {
-    id: "custom_field_fill_rate",
-    title: "Taxa de Preenchimento",
-    description: "Percentual de leads que preencheram um campo",
-    chartType: "number",
-    dataSource: "custom_field_fill_rate",
-    defaultSize: { widthPercent: 22, height: 180 },
-    icon: "CheckCircle2",
-    category: "metrics",
+    id: "table_card",
+    title: "Tabela de Dados",
+    description: "Dados em formato tabular organizado",
+    chartType: "table",
+    dataSource: "recent_leads",
+    defaultSize: { widthPercent: 50, height: 360 },
+    icon: "Table2",
+    category: "featured",
+  },
+  // Lists
+  {
+    id: "recent_leads",
+    title: "Lista de Leads",
+    description: "Últimos leads com avatar e detalhes",
+    chartType: "list",
+    dataSource: "recent_leads",
+    defaultSize: { widthPercent: 30, height: 400 },
+    icon: "List",
+    category: "lists",
   },
 ];
 
