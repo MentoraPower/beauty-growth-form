@@ -794,40 +794,23 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-4 gap-4 p-0 animate-in fade-in duration-300">
+      <div className="flex flex-wrap gap-4 p-0 animate-in fade-in duration-500">
         {[
-          { col: 1, h: 180 },
-          { col: 1, h: 180 },
-          { col: 2, h: 180 },
-          { col: 2, h: 260 },
-          { col: 2, h: 260 },
+          { w: "22%", h: 160 },
+          { w: "22%", h: 160 },
+          { w: "50%", h: 280 },
+          { w: "40%", h: 280 },
+          { w: "30%", h: 280 },
         ].map((s, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border/30 dark:border-white/[0.06] bg-card overflow-hidden flex flex-col"
-            style={{ 
-              gridColumn: `span ${s.col}`,
-              height: s.h,
-            }}
+            className="rounded-xl border border-border/20 dark:border-white/[0.04] bg-card/50 overflow-hidden"
+            style={{ width: `calc(${s.w} - 12px)`, height: s.h, opacity: 1 - i * 0.1 }}
           >
-            <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-              <div className="h-3.5 w-24 bg-muted/60 rounded-md animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
-              <div className="h-3 w-3 bg-muted/40 rounded animate-pulse" style={{ animationDelay: `${i * 100 + 50}ms` }} />
-            </div>
-            <div className="px-4 pb-4 flex-1 min-h-0 flex items-end gap-2">
-              {s.h >= 250 ? (
-                [35, 60, 45, 75, 50, 65, 40].map((h, j) => (
-                  <div 
-                    key={j} 
-                    className="flex-1 bg-muted/30 rounded-t-md animate-pulse"
-                    style={{ height: `${h}%`, animationDelay: `${i * 100 + j * 50}ms` }}
-                  />
-                ))
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="h-10 w-20 bg-muted/40 rounded-lg animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
-                </div>
-              )}
+            <div className="p-4 h-full flex flex-col">
+              <div className="h-3 w-20 bg-muted/40 rounded-md" />
+              <div className="flex-1" />
+              <div className="h-3 w-12 bg-muted/30 rounded-md" />
             </div>
           </div>
         ))}
