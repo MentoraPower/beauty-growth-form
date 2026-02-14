@@ -104,7 +104,7 @@ const ChartPreview = ({ type }: { type: string }) => {
       return (
         <div className="grid grid-cols-7 gap-[2px]">
           {Array.from({ length: 21 }).map((_, i) => {
-            const opacity = [0.1, 0.25, 0.5, 0.75, 1][Math.floor(Math.random() * 5)];
+            const opacity = [0.1, 0.25, 0.5, 0.75, 1][i % 5];
             return <div key={i} className="w-2 h-2 rounded-[2px] bg-primary" style={{ opacity }} />;
           })}
         </div>
@@ -133,96 +133,112 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[90vw] max-w-3xl max-h-[80vh] p-0 gap-0 overflow-hidden bg-background border-border/40 dark:border-white/[0.08]">
-        {/* Header */}
-        <div className="px-5 pt-5 pb-3 space-y-3">
-          <DialogHeader>
-            <DialogTitle className="text-base font-semibold">Adicionar cartão</DialogTitle>
-          </DialogHeader>
+      <DialogContent className="w-[92vw] max-w-5xl h-[85vh] max-h-[680px] p-0 gap-0 overflow-hidden bg-background border-border/40 dark:border-white/[0.08]">
+        <div className="flex h-full">
+          {/* Sidebar */}
+          <div className="w-52 shrink-0 border-r border-border/30 dark:border-white/[0.06] flex flex-col">
+            <div className="px-4 pt-5 pb-4">
+              <h2 className="text-base font-semibold text-foreground">Adicionar cartão</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Escolha um tipo de visualização</p>
+            </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Pesquisar cartões..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 bg-muted/40 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
-            />
+            <nav className="flex-1 px-2 space-y-0.5">
+              {CATEGORIES.map((cat) => {
+                const Icon = cat.icon;
+                const count = cat.id === "all"
+                  ? CARD_TEMPLATES.length
+                  : CARD_TEMPLATES.filter(t => t.category === cat.id).length;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all",
+                      selectedCategory === cat.id
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">{cat.label}</span>
+                    <span className={cn(
+                      "text-[11px] tabular-nums",
+                      selectedCategory === cat.id ? "text-primary/70" : "text-muted-foreground/50"
+                    )}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1">
-            {CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                    selectedCategory === cat.id
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {cat.label}
-                </button>
-              );
-            })}
+          {/* Main content */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Search bar */}
+            <div className="px-4 pt-4 pb-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar cartões..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 h-9 bg-muted/40 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-border/30 dark:bg-white/[0.04]" />
+
+            {/* Cards Grid */}
+            <ScrollArea className="flex-1">
+              <div className="p-4 grid grid-cols-3 gap-3">
+                {filteredTemplates.map((template) => {
+                  const Icon = TEMPLATE_ICONS[template.id] || Hash;
+                  return (
+                    <button
+                      key={template.id}
+                      onClick={() => handleAddCard(template)}
+                      className={cn(
+                        "group relative flex flex-col rounded-xl border border-border/30 dark:border-white/[0.06]",
+                        "bg-card hover:bg-muted/30 hover:border-border/60 dark:hover:border-white/[0.12]",
+                        "transition-all duration-200 text-left overflow-hidden hover:shadow-md"
+                      )}
+                    >
+                      {/* Preview */}
+                      <div className="h-28 flex items-center justify-center px-4 bg-muted/20 dark:bg-white/[0.02]">
+                        <ChartPreview type={template.chartType} />
+                      </div>
+
+                      {/* Info */}
+                      <div className="p-3 flex items-start gap-2.5 border-t border-border/20 dark:border-white/[0.04]">
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <Icon className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[13px] font-medium text-foreground leading-tight line-clamp-1">
+                            {template.title.replace(/^(Gráfico de |Cartão |Lista - |Pizza - |Gauge - |Numérico - |Heatmap de )/, '')}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                            {template.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {filteredTemplates.length === 0 && (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Nenhum cartão encontrado</p>
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </div>
-
-        {/* Divider */}
-        <div className="h-px bg-border/40 dark:bg-white/[0.06]" />
-
-        {/* Grid */}
-        <ScrollArea className="flex-1 max-h-[calc(80vh-160px)]">
-          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {filteredTemplates.map((template) => {
-              const Icon = TEMPLATE_ICONS[template.id] || Hash;
-              return (
-                <button
-                  key={template.id}
-                  onClick={() => handleAddCard(template)}
-                  className={cn(
-                    "group relative flex flex-col rounded-xl border border-border/30 dark:border-white/[0.06]",
-                    "bg-card hover:bg-muted/30 hover:border-border/60 dark:hover:border-white/[0.12]",
-                    "transition-all duration-200 text-left overflow-hidden"
-                  )}
-                >
-                  {/* Preview */}
-                  <div className="h-24 flex items-center justify-center px-4 bg-muted/20 dark:bg-white/[0.02]">
-                    <ChartPreview type={template.chartType} />
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-3 flex items-start gap-2.5 border-t border-border/20 dark:border-white/[0.04]">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[13px] font-medium text-foreground leading-tight line-clamp-1">
-                        {template.title.replace(/^(Gráfico de |Cartão |Lista - |Pizza - |Gauge - |Numérico - |Heatmap de )/, '')}
-                      </h4>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                        {template.description}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {filteredTemplates.length === 0 && (
-            <div className="text-center py-16 text-muted-foreground">
-              <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Nenhum cartão encontrado</p>
-            </div>
-          )}
-        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
