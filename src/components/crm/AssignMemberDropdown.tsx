@@ -106,7 +106,7 @@ export function AssignMemberDropdown({ leadId, assignedTo, onAssign, size = "def
       <PopoverContent 
         side="bottom" 
         align="end"
-        className="w-48 p-1 bg-white border shadow-lg z-50"
+        className="w-48 p-1 bg-popover border border-border/60 dark:border-white/15 shadow-lg z-50"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-xs text-muted-foreground px-2 py-1.5 font-medium">Atribuir responsável</p>

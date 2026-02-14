@@ -400,7 +400,7 @@ export function OverviewCardComponent({
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-popover border border-border/60 dark:border-white/15">
               <DropdownMenuItem
                 onClick={() => onDelete(card.id)}
                 className="text-destructive focus:text-destructive"
